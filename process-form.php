@@ -4,25 +4,26 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // Database connection
-$servername = "localhost";
-$username = "root"; // Default XAMPP user
-$password = ""; // Default is empty
+$host = "localhost";
+$port = "5432";
 $dbname = "portfolio_db";
+$user = "postgres"; // Default PostgreSQL user
+$password = "yourpassword"; // Set your PostgreSQL password
 
-$conn = new mysqli($servername, $username, $password, $dbname);
+$conn = pg_connect("host=$host port=$port dbname=$dbname user=$user password=$password");
 
 // Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+if (!$conn) {
+    die("Connection failed: " . pg_last_error());
 }
 
 // Check if form was submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Get form values safely
-    $name = isset($_POST['name']) ? $conn->real_escape_string($_POST['name']) : '';
-    $email = isset($_POST['email']) ? $conn->real_escape_string($_POST['email']) : '';
-    $subject = isset($_POST['subject']) ? $conn->real_escape_string($_POST['subject']) : 'No Subject';
-    $message = isset($_POST['message']) ? $conn->real_escape_string($_POST['message']) : '';
+    $name = isset($_POST['name']) ? pg_escape_string($conn, $_POST['name']) : '';
+    $email = isset($_POST['email']) ? pg_escape_string($conn, $_POST['email']) : '';
+    $subject = isset($_POST['subject']) ? pg_escape_string($conn, $_POST['subject']) : 'No Subject';
+    $message = isset($_POST['message']) ? pg_escape_string($conn, $_POST['message']) : '';
 
     // Validate required fields
     if (empty($name) || empty($email) || empty($message)) {
@@ -30,10 +31,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // Insert data into database
-    $sql = "INSERT INTO contact_form (name, email, subject, message) 
-            VALUES ('$name', '$email', '$subject', '$message')";
+    $sql = "INSERT INTO contact_form (name, email, subject, message) VALUES ('$name', '$email', '$subject', '$message')";
+    $result = pg_query($conn, $sql);
 
-    if ($conn->query($sql) === TRUE) {
+    if ($result) {
         $status = "success";
         $message = "Your message has been sent successfully!";
     } else {
@@ -45,7 +46,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     exit();
 }
 
-$conn->close();
+pg_close($conn);
 ?>
 
 <!DOCTYPE html>
